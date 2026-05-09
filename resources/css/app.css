@@ -1,0 +1,7 @@
+@import 'tailwindcss';
+@plugin '@tailwindcss/forms';
+
+/* Alpine.js cloak — sembunyikan elemen sebelum Alpine terinisialisasi */
+[x-cloak] {
+    display: none !important;
+}
