@@ -8,6 +8,7 @@ use App\Http\Requests\UpdateBookRequest;
 use App\Models\Book;
 use App\Models\Category;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
 class BookController extends Controller
@@ -39,7 +40,13 @@ class BookController extends Controller
      */
     public function store(StoreBookRequest $request): RedirectResponse
     {
-        Book::create($request->validated());
+        $data = $request->validated();
+
+        if ($request->hasFile('cover_image')) {
+            $data['cover_image'] = $request->file('cover_image')->store('covers', 'public');
+        }
+
+        Book::create($data);
 
         return redirect()
             ->route('admin.books.index')
@@ -62,7 +69,16 @@ class BookController extends Controller
      */
     public function update(UpdateBookRequest $request, Book $book): RedirectResponse
     {
-        $book->update($request->validated());
+        $data = $request->validated();
+
+        if ($request->hasFile('cover_image')) {
+            if ($book->cover_image) {
+                Storage::disk('public')->delete($book->cover_image);
+            }
+            $data['cover_image'] = $request->file('cover_image')->store('covers', 'public');
+        }
+
+        $book->update($data);
 
         return redirect()
             ->route('admin.books.index')
@@ -75,6 +91,9 @@ class BookController extends Controller
     public function destroy(Book $book): RedirectResponse
     {
         try {
+            if ($book->cover_image) {
+                Storage::disk('public')->delete($book->cover_image);
+            }
             $book->delete();
         } catch (\Illuminate\Database\QueryException $e) {
             return redirect()

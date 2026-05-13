@@ -7,8 +7,19 @@
             <p class="mt-1 text-sm text-slate-500">Tambahkan buku baru ke inventaris perpustakaan.</p>
 
             <form method="POST" action="{{ route('admin.books.store') }}" class="mt-6 space-y-5"
+                  enctype="multipart/form-data"
                   x-data="{ submitting: false }" @submit="submitting = true">
                 @csrf
+
+                {{-- Cover Buku --}}
+                <div>
+                    <label for="cover_image" class="block text-sm font-medium text-slate-700">Sampul Buku <span class="text-slate-400 font-normal">(opsional, maks 2MB)</span></label>
+                    <input type="file" name="cover_image" id="cover_image" accept="image/*"
+                           class="mt-1 block w-full text-sm text-slate-500 file:mr-4 file:rounded-lg file:border-0 file:bg-emerald-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-emerald-700 hover:file:bg-emerald-100">
+                    @error('cover_image')
+                        <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
 
                 {{-- Judul --}}
                 <div>
@@ -68,6 +79,17 @@
                         @endforeach
                     </select>
                     @error('category_id')
+                        <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                {{-- Deskripsi --}}
+                <div>
+                    <label for="description" class="block text-sm font-medium text-slate-700">Deskripsi / Sinopsis <span class="text-slate-400 font-normal">(opsional)</span></label>
+                    <textarea name="description" id="description" rows="4"
+                              class="mt-1 block w-full rounded-lg border-slate-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 text-sm"
+                              placeholder="Tulis sinopsis atau deskripsi singkat buku...">{{ old('description') }}</textarea>
+                    @error('description')
                         <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
                     @enderror
                 </div>

@@ -147,6 +147,10 @@
                                             Dikembalikan
                                         </span>
                                         @break
+                                    @default
+                                        <span class="inline-flex items-center rounded-full bg-slate-50 px-2.5 py-0.5 text-xs font-semibold text-slate-500 ring-1 ring-slate-200">
+                                            Dibatalkan
+                                        </span>
                                 @endswitch
                             </td>
 
@@ -168,6 +172,7 @@
                             <td class="px-6 py-4 text-center">
                                 @if($borrowing->status === 'pending')
                                     {{-- Serahkan Buku — Modal Konfirmasi --}}
+                                    <div class="flex items-center justify-center gap-2">
                                     <x-modal-confirm
                                         title="Serahkan Buku?"
                                         body="Konfirmasi penyerahan buku '{{ $borrowing->book->title }}' kepada {{ $borrowing->user->name }}. Status akan berubah menjadi Dipinjam.">
@@ -199,6 +204,39 @@
                                             </button>
                                         </form>
                                     </x-modal-confirm>
+
+                                    {{-- Batalkan --}}
+                                    <x-modal-confirm
+                                        title="Batalkan Peminjaman?"
+                                        body="Batalkan peminjaman buku '{{ $borrowing->book->title }}' oleh {{ $borrowing->user->name }}? Stok buku akan dikembalikan.">
+                                        <x-slot name="trigger">
+                                            <button type="button" x-on:click="open = true"
+                                                    class="inline-flex items-center gap-1.5 rounded-lg bg-red-50 border border-red-300 px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-100 shadow-sm transition">
+                                                <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                                </svg>
+                                                Batalkan
+                                            </button>
+                                        </x-slot>
+                                        <form method="POST" action="{{ route('staff.circulation.cancel', $borrowing) }}"
+                                              x-data="{ submitting: false }" @submit="submitting = true">
+                                            @csrf
+                                            @method('PATCH')
+                                            <button type="submit"
+                                                    :disabled="submitting"
+                                                    class="inline-flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition">
+                                                <span x-show="!submitting">Ya, Batalkan</span>
+                                                <span x-show="submitting" x-cloak class="flex items-center gap-2">
+                                                    <svg class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                                                    </svg>
+                                                    Memproses...
+                                                </span>
+                                            </button>
+                                        </form>
+                                    </x-modal-confirm>
+                                    </div>
 
                                 @elseif(in_array($borrowing->status, ['active', 'overdue']))
                                     {{-- Terima Pengembalian — Modal Konfirmasi --}}

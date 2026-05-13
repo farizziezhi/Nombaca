@@ -37,7 +37,8 @@
                     {{-- Category Filter --}}
                     <select name="category"
                             class="h-12 rounded-lg border-0 bg-slate-800 px-4 text-white focus:ring-2 focus:ring-emerald-500 text-base sm:w-48 transition appearance-none cursor-pointer"
-                            id="select-category">
+                            id="select-category"
+                            onchange="this.form.submit()">
                         <option value="" class="text-slate-200">Semua Kategori</option>
                         @foreach($categories as $category)
                             <option value="{{ $category->id }}" class="text-slate-200"
@@ -97,15 +98,19 @@
             <article class="group relative flex flex-col overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-emerald-900/5 hover:ring-emerald-200"
                      id="book-card-{{ $book->id }}">
                 
-                {{-- Book Cover Placeholder --}}
+                {{-- Book Cover --}}
                 <a href="{{ route('catalog.show', $book->isbn) }}" class="block aspect-[3/4] bg-slate-100 relative overflow-hidden">
                     <div class="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity z-10"></div>
-                    <div class="absolute inset-0 flex items-center justify-center text-slate-300 group-hover:scale-110 transition-transform duration-500">
-                        <svg class="h-16 w-16 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
-                        </svg>
-                    </div>
-                    {{-- Quick actions overlay --}}
+                    @if($book->cover_image)
+                        <img src="{{ asset('storage/' . $book->cover_image) }}" alt="{{ $book->title }}"
+                             class="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500">
+                    @else
+                        <div class="absolute inset-0 flex items-center justify-center text-slate-300 group-hover:scale-110 transition-transform duration-500">
+                            <svg class="h-16 w-16 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+                            </svg>
+                        </div>
+                    @endif
                     <div class="absolute bottom-4 left-4 right-4 translate-y-8 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all z-20">
                         <span class="block text-center text-xs font-bold text-white tracking-widest uppercase mb-2 drop-shadow-md">Lihat Detail</span>
                     </div>

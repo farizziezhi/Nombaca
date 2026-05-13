@@ -7,9 +7,26 @@
             <p class="mt-1 text-sm text-slate-500">Perbarui data buku &laquo;{{ $book->title }}&raquo;.</p>
 
             <form method="POST" action="{{ route('admin.books.update', $book) }}" class="mt-6 space-y-5"
+                  enctype="multipart/form-data"
                   x-data="{ submitting: false }" @submit="submitting = true">
                 @csrf
                 @method('PUT')
+
+                {{-- Cover Buku --}}
+                <div>
+                    <label class="block text-sm font-medium text-slate-700">Sampul Buku <span class="text-slate-400 font-normal">(opsional, maks 2MB)</span></label>
+                    @if($book->cover_image)
+                        <div class="mt-2 mb-3 flex items-center gap-4">
+                            <img src="{{ asset('storage/' . $book->cover_image) }}" alt="Cover" class="h-24 w-16 rounded object-cover shadow">
+                            <p class="text-xs text-slate-500">Upload gambar baru untuk mengganti cover saat ini.</p>
+                        </div>
+                    @endif
+                    <input type="file" name="cover_image" id="cover_image" accept="image/*"
+                           class="mt-1 block w-full text-sm text-slate-500 file:mr-4 file:rounded-lg file:border-0 file:bg-emerald-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-emerald-700 hover:file:bg-emerald-100">
+                    @error('cover_image')
+                        <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
 
                 {{-- Judul --}}
                 <div>
@@ -69,6 +86,17 @@
                         @endforeach
                     </select>
                     @error('category_id')
+                        <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                {{-- Deskripsi --}}
+                <div>
+                    <label for="description" class="block text-sm font-medium text-slate-700">Deskripsi / Sinopsis <span class="text-slate-400 font-normal">(opsional)</span></label>
+                    <textarea name="description" id="description" rows="4"
+                              class="mt-1 block w-full rounded-lg border-slate-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 text-sm"
+                              placeholder="Tulis sinopsis atau deskripsi singkat buku...">{{ old('description', $book->description) }}</textarea>
+                    @error('description')
                         <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
                     @enderror
                 </div>

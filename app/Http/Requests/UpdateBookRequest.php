@@ -34,6 +34,8 @@ class UpdateBookRequest extends FormRequest
                 'regex:/^[0-9\-]+$/',
             ],
             'stock'       => ['required', 'integer', 'min:0'],
+            'cover_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+            'description' => ['nullable', 'string', 'max:2000'],
         ];
     }
 

@@ -90,4 +90,24 @@ class CirculationController extends Controller
 
         return redirect()->back()->with('success', 'Buku berhasil dikembalikan dan stok telah bertambah.');
     }
+
+    /**
+     * Batalkan peminjaman — hanya untuk status pending.
+     * Stok dikembalikan karena sudah dipotong saat booking.
+     */
+    public function cancel(Borrowing $borrowing): RedirectResponse
+    {
+        if ($borrowing->status !== 'pending') {
+            return redirect()->back()->with('error', 'Hanya peminjaman berstatus pending yang bisa dibatalkan.');
+        }
+
+        DB::transaction(function () use ($borrowing) {
+            $borrowing->update(['status' => 'cancelled']);
+
+            $book = Book::where('id', $borrowing->book_id)->lockForUpdate()->firstOrFail();
+            $book->increment('stock');
+        });
+
+        return redirect()->back()->with('success', 'Peminjaman berhasil dibatalkan dan stok telah dikembalikan.');
+    }
 }

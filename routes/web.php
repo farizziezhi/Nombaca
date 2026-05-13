@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\BookController;
 use App\Http\Controllers\Admin\CategoryController;
+use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\BorrowingController;
 use App\Http\Controllers\CatalogController;
 use App\Http\Controllers\ProfileController;
@@ -18,13 +19,15 @@ Route::get('/katalog/{book:isbn}', [CatalogController::class, 'show'])->name('ca
 // Dashboard — redirect berdasarkan role
 // ═══════════════════════════════════════════════════════
 Route::get('/dashboard', function () {
-    $role = auth()->user()->role;
-
-    return match ($role) {
-        'admin', 'petugas' => redirect()->route('staff.circulation.index'),
-        default            => redirect()->route('borrowings.index'),
-    };
+    if (in_array(auth()->user()->role, ['admin', 'petugas'])) {
+        return redirect()->route('admin.dashboard');
+    }
+    return redirect()->route('borrowings.index');
 })->middleware(['auth', 'verified'])->name('dashboard');
+
+Route::get('/admin/dashboard', [DashboardController::class, 'index'])
+    ->middleware(['auth', 'role:admin,petugas'])
+    ->name('admin.dashboard');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -51,6 +54,7 @@ Route::middleware(['auth', 'role:admin,petugas'])
             Route::get('/', [CirculationController::class, 'index'])->name('index');
             Route::patch('/{borrowing}/approve', [CirculationController::class, 'approve'])->name('approve');
             Route::patch('/{borrowing}/return', [CirculationController::class, 'returnBook'])->name('return');
+            Route::patch('/{borrowing}/cancel', [CirculationController::class, 'cancel'])->name('cancel');
         });
 
         Route::prefix('fines')->name('fines.')->group(function () {

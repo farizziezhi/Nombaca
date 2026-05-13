@@ -44,9 +44,9 @@ class CatalogController extends Controller
      *
      * WAJIB menggunakan Route Model Binding dan Eager Loading.
      */
-    public function show(Book $book): View
+    public function show(string $isbn): View
     {
-        $book->load('category');
+        $book = Book::with('category')->where('isbn', $isbn)->firstOrFail();
         return view('catalog.show', compact('book'));
     }
 }

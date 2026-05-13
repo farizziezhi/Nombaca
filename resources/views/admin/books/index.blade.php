@@ -25,6 +25,7 @@
                     <thead class="bg-slate-50">
                         <tr>
                             <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">No</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Cover</th>
                             <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Judul</th>
                             <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Penulis</th>
                             <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">ISBN</th>
@@ -37,6 +38,15 @@
                         @forelse($books as $index => $book)
                         <tr class="hover:bg-slate-50 transition">
                             <td class="px-6 py-4 text-sm text-slate-500">{{ $index + 1 }}</td>
+                            <td class="px-6 py-4">
+                                @if($book->cover_image)
+                                    <img src="{{ asset('storage/' . $book->cover_image) }}" alt="cover" class="h-12 w-8 rounded object-cover shadow">
+                                @else
+                                    <div class="h-12 w-8 rounded bg-slate-200 flex items-center justify-center">
+                                        <svg class="h-4 w-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14"/></svg>
+                                    </div>
+                                @endif
+                            </td>
                             <td class="px-6 py-4">
                                 <p class="text-sm font-medium text-slate-900">{{ $book->title }}</p>
                             </td>
