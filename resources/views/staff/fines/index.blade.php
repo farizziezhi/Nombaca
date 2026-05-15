@@ -7,9 +7,9 @@
         {{-- STAT CARDS (Ringkasan Cepat)               --}}
         {{-- ═══════════════════════════════════════════ --}}
         @php
-            $unpaidCount = $fines->where('status', 'unpaid')->count();
-            $paidCount = $fines->where('status', 'paid')->count();
-            $totalUnpaid = $fines->where('status', 'unpaid')->sum('amount');
+            $unpaidCount = $stats['unpaid'];
+            $paidCount   = $stats['paid'];
+            $totalUnpaid = $stats['totalUnpaid'];
         @endphp
 
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -170,6 +170,12 @@
                     </tbody>
                 </table>
             </div>
+
+            @if($fines->hasPages())
+                <div class="border-t border-slate-200 px-6 py-4">
+                    {{ $fines->links() }}
+                </div>
+            @endif
             @else
             {{-- Empty State --}}
             <div class="flex flex-col items-center justify-center px-6 py-16">

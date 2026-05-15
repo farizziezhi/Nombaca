@@ -13,16 +13,29 @@ class CirculationController extends Controller
 {
     /**
      * Meja Sirkulasi — daftar seluruh transaksi peminjaman.
-     * WAJIB Eager Loading with(['user', 'book', 'fine']) — optimasi HDD.
+     *
+     * Optimasi HDD:
+     * - Eager Loading with(['user', 'book', 'finePayment']) untuk mencegah N+1.
+     * - Statistik agregat dihitung lewat COUNT terpisah agar tidak terpengaruh pagination.
+     * - Urutan deterministik: prioritas status (pending → active → overdue → returned → cancelled) lalu terbaru.
      */
     public function index(): View
     {
-        $borrowings = Borrowing::with(['user', 'book', 'finePayment'])
-            ->orderByRaw("FIELD(status, 'pending', 'active', 'overdue', 'returned')")
-            ->latest()
-            ->get();
+        $stats = [
+            'pending'   => Borrowing::where('status', 'pending')->count(),
+            'active'    => Borrowing::where('status', 'active')->count(),
+            'overdue'   => Borrowing::where('status', 'overdue')->count(),
+            'returned'  => Borrowing::where('status', 'returned')->count(),
+            'cancelled' => Borrowing::where('status', 'cancelled')->count(),
+        ];
 
-        return view('staff.circulation.index', compact('borrowings'));
+        $borrowings = Borrowing::with(['user', 'book', 'finePayment'])
+            ->orderByRaw("FIELD(status, 'pending', 'active', 'overdue', 'returned', 'cancelled')")
+            ->latest()
+            ->paginate(15)
+            ->withQueryString();
+
+        return view('staff.circulation.index', compact('borrowings', 'stats'));
     }
 
     /**

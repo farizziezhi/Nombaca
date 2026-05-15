@@ -9,15 +9,26 @@ class FineController extends Controller
 {
     /**
      * Tampilkan seluruh data denda.
-     * Optimasi HDD: Eager Loading with('borrowing.user', 'borrowing.book')
+     *
+     * Optimasi HDD:
+     * - Eager Loading with(['borrowing.user', 'borrowing.book']) untuk mencegah N+1 di Blade.
+     * - Statistik agregat dihitung lewat COUNT/SUM terpisah agar tidak terpengaruh pagination.
      */
     public function index()
     {
-        $fines = Fine::with(['borrowing.user', 'borrowing.book'])
-            ->latest()
-            ->get();
+        $stats = [
+            'unpaid'      => Fine::where('status', 'unpaid')->count(),
+            'paid'        => Fine::where('status', 'paid')->count(),
+            'totalUnpaid' => Fine::where('status', 'unpaid')->sum('amount'),
+        ];
 
-        return view('staff.fines.index', compact('fines'));
+        $fines = Fine::with(['borrowing.user', 'borrowing.book'])
+            ->orderByRaw("FIELD(status, 'unpaid', 'paid')")
+            ->latest()
+            ->paginate(15)
+            ->withQueryString();
+
+        return view('staff.fines.index', compact('fines', 'stats'));
     }
 
     /**

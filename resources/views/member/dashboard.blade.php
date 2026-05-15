@@ -23,12 +23,10 @@
             {{-- ═══════════════════════════════════════════ --}}
             <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 @php
-                    $pending  = $borrowings->where('status', 'pending')->count();
-                    $active   = $borrowings->where('status', 'active')->count();
-                    $returned = $borrowings->where('status', 'returned')->count();
-                    $unpaidFines = $borrowings->sum(function($b) {
-                        return ($b->finePayment && $b->finePayment->status === 'unpaid') ? $b->finePayment->amount : 0;
-                    });
+                    $pending     = $stats['pending'];
+                    $active      = $stats['active'];
+                    $returned    = $stats['returned'];
+                    $unpaidFines = $stats['unpaidFines'];
                 @endphp
 
                 {{-- Pending --}}
@@ -202,6 +200,12 @@
                             </div>
                         @endforeach
                     </div>
+
+                    @if($borrowings->hasPages())
+                        <div class="mt-6">
+                            {{ $borrowings->links() }}
+                        </div>
+                    @endif
                 @else
                     {{-- Empty State --}}
                     <div class="flex flex-col items-center justify-center rounded-3xl border-2 border-dashed border-slate-200 bg-white px-6 py-20">

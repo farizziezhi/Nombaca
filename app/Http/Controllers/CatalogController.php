@@ -32,7 +32,7 @@ class CatalogController extends Controller
             $query->where('category_id', $categoryId);
         }
 
-        $books = $query->latest()->paginate(12)->appends($request->query());
+        $books = $query->orderBy('title')->orderBy('id')->paginate(12)->appends($request->query());
 
         $categories = Category::orderBy('name')->get();
 

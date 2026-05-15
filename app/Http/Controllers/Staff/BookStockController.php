@@ -19,10 +19,13 @@ class BookStockController extends Controller
 
         $books = Book::query()
             ->when($search, function ($query, $search) {
-                $query->where('title', 'like', "%{$search}%")
+                $query->where(function ($q) use ($search) {
+                    $q->where('title', 'like', "%{$search}%")
                       ->orWhere('isbn', 'like', "%{$search}%");
+                });
             })
-            ->latest()
+            ->orderBy('title')
+            ->orderBy('id')
             ->paginate(10)
             ->withQueryString();
 

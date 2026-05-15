@@ -32,6 +32,10 @@ class UserController extends Controller
 
     /**
      * Perbarui role pengguna.
+     *
+     * Aturan keamanan:
+     * - Tidak boleh mengubah role diri sendiri.
+     * - Tidak boleh menurunkan role admin terakhir di sistem (mencegah perpustakaan kehilangan akses admin).
      */
     public function updateRole(Request $request, User $user): RedirectResponse
     {
@@ -41,6 +45,15 @@ class UserController extends Controller
 
         if ($user->id === auth()->id()) {
             return redirect()->back()->with('error', 'Anda tidak dapat mengubah role Anda sendiri.');
+        }
+
+        // Proteksi admin terakhir: cegah demote bila admin tinggal satu di sistem.
+        if ($user->role === 'admin' && $validated['role'] !== 'admin') {
+            $totalAdmin = User::where('role', 'admin')->count();
+
+            if ($totalAdmin <= 1) {
+                return redirect()->back()->with('error', 'Tidak dapat menurunkan role admin terakhir. Tunjuk admin lain terlebih dahulu.');
+            }
         }
 
         $user->update(['role' => $validated['role']]);

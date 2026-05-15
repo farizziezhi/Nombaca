@@ -29,12 +29,12 @@ class CategoryController extends Controller
     }
 
     /**
-     * Store a newly created category.
+     * Simpan kategori baru.
      */
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
+            'name' => ['required', 'string', 'max:255', 'unique:categories,name'],
         ]);
 
         Category::create($validated);
@@ -53,12 +53,12 @@ class CategoryController extends Controller
     }
 
     /**
-     * Update the specified category.
+     * Perbarui kategori.
      */
     public function update(Request $request, Category $category): RedirectResponse
     {
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
+            'name' => ['required', 'string', 'max:255', 'unique:categories,name,' . $category->id],
         ]);
 
         $category->update($validated);

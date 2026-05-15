@@ -7,10 +7,10 @@
         {{-- STAT CARDS (Ringkasan Cepat)               --}}
         {{-- ═══════════════════════════════════════════ --}}
         @php
-            $pendingCount  = $borrowings->where('status', 'pending')->count();
-            $activeCount   = $borrowings->where('status', 'active')->count();
-            $overdueCount  = $borrowings->where('status', 'overdue')->count();
-            $returnedCount = $borrowings->where('status', 'returned')->count();
+            $pendingCount  = $stats['pending'];
+            $activeCount   = $stats['active'];
+            $overdueCount  = $stats['overdue'];
+            $returnedCount = $stats['returned'];
         @endphp
 
         <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
@@ -281,6 +281,12 @@
                     </tbody>
                 </table>
             </div>
+
+            @if($borrowings->hasPages())
+                <div class="border-t border-slate-200 px-6 py-4">
+                    {{ $borrowings->links() }}
+                </div>
+            @endif
             @else
             {{-- Empty State --}}
             <div class="flex flex-col items-center justify-center px-6 py-16">

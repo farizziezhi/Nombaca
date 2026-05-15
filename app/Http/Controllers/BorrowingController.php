@@ -15,68 +15,97 @@ class BorrowingController extends Controller
 {
     /**
      * Dashboard Member — riwayat peminjaman.
-     * WAJIB Eager Loading with(['book', 'fine']) — optimasi HDD.
+     *
+     * Optimasi HDD:
+     * - Eager Loading with(['book.category', 'finePayment']) untuk mencegah N+1.
+     * - Statistik agregat dihitung lewat query COUNT/SUM agar pagination tidak mempengaruhi nilai ringkasan.
      */
     public function index(): View
     {
-        $borrowings = Borrowing::with(['book.category', 'finePayment'])
-            ->where('user_id', Auth::id())
-            ->latest()
-            ->get();
+        $userId = Auth::id();
 
-        return view('member.dashboard', compact('borrowings'));
+        $baseQuery = Borrowing::where('user_id', $userId);
+
+        $stats = [
+            'pending'     => (clone $baseQuery)->where('status', 'pending')->count(),
+            'active'      => (clone $baseQuery)->where('status', 'active')->count(),
+            'returned'    => (clone $baseQuery)->where('status', 'returned')->count(),
+            'unpaidFines' => Fine::whereHas('borrowing', fn ($q) => $q->where('user_id', $userId))
+                                 ->where('status', 'unpaid')
+                                 ->sum('amount'),
+        ];
+
+        $borrowings = Borrowing::with(['book.category', 'finePayment'])
+            ->where('user_id', $userId)
+            ->latest()
+            ->paginate(10)
+            ->withQueryString();
+
+        return view('member.dashboard', compact('borrowings', 'stats'));
     }
 
     /**
      * Proses peminjaman buku oleh Member.
      *
-     * Logika Krusial:
-     * 1. Cek blacklist denda (unpaid fines)
-     * 2. Cek limit peminjaman (maks 3)
-     * 3. Pessimistic Locking + DB Transaction
-     * 4. Cek stok fisik
-     * 5. Kurangi stok, buat record Borrowing
+     * Logika Krusial (semua dijalankan di dalam DB::transaction untuk mencegah race condition):
+     * 1. Lock baris buku (lockForUpdate) — mencegah double-decrement stok.
+     * 2. Cek blacklist denda (unpaid fines).
+     * 3. Cek limit peminjaman aktif/pending (maks 3) — re-check di dalam transaksi.
+     * 4. Cek member belum meminjam buku yang sama (status pending/active/overdue).
+     * 5. Cek stok fisik > 0.
+     * 6. Kurangi stok dan buat record Borrowing baru berstatus pending.
      */
     public function store(Request $request): RedirectResponse
     {
-        $request->validate([
-            'book_id' => ['required', 'exists:books,id'],
+        $validated = $request->validate([
+            'book_id' => ['required', 'integer', 'exists:books,id'],
         ]);
 
         $userId = Auth::id();
+        $bookId = (int) $validated['book_id'];
 
-        // ─── 1. Cek Blacklist Denda ────────────────────────
-        $hasUnpaidFine = Fine::whereHas('borrowing', function ($q) use ($userId) {
-            $q->where('user_id', $userId);
-        })->where('status', 'unpaid')->exists();
-
-        if ($hasUnpaidFine) {
-            return redirect()->back()->with('error', 'Gagal: Anda harus melunasi denda terlebih dahulu!');
-        }
-
-        // ─── 2. Cek Limit Peminjaman (maks 3) ─────────────
-        $activeBorrowings = Borrowing::where('user_id', $userId)
-            ->whereIn('status', ['pending', 'active'])
-            ->count();
-
-        if ($activeBorrowings >= 3) {
-            return redirect()->back()->with('error', 'Batas maksimal 3 buku!');
-        }
-
-        // ─── 3. Pessimistic Locking & Transaksi ────────────
         try {
-            DB::transaction(function () use ($request, $userId) {
+            DB::transaction(function () use ($userId, $bookId) {
+                // ─── 1. Pessimistic Lock pada baris buku ─────────────
                 /** @var Book $book */
-                $book = Book::where('id', $request->book_id)
+                $book = Book::where('id', $bookId)
                     ->lockForUpdate()
                     ->firstOrFail();
 
-                // ─── 4. Cek Stok Fisik ─────────────────────
+                // ─── 2. Cek Blacklist Denda ──────────────────────────
+                $hasUnpaidFine = Fine::whereHas('borrowing', fn ($q) => $q->where('user_id', $userId))
+                    ->where('status', 'unpaid')
+                    ->exists();
+
+                if ($hasUnpaidFine) {
+                    throw new \RuntimeException('Gagal: Anda harus melunasi denda terlebih dahulu!');
+                }
+
+                // ─── 3. Cek Limit Peminjaman (maks 3) ───────────────
+                $activeBorrowings = Borrowing::where('user_id', $userId)
+                    ->whereIn('status', ['pending', 'active', 'overdue'])
+                    ->count();
+
+                if ($activeBorrowings >= 3) {
+                    throw new \RuntimeException('Batas maksimal 3 buku!');
+                }
+
+                // ─── 4. Cek Duplikasi Buku ──────────────────────────
+                $alreadyBorrowed = Borrowing::where('user_id', $userId)
+                    ->where('book_id', $bookId)
+                    ->whereIn('status', ['pending', 'active', 'overdue'])
+                    ->exists();
+
+                if ($alreadyBorrowed) {
+                    throw new \RuntimeException('Anda sudah memiliki peminjaman aktif untuk buku ini.');
+                }
+
+                // ─── 5. Cek Stok Fisik ──────────────────────────────
                 if ($book->stock < 1) {
                     throw new \RuntimeException('Stok habis!');
                 }
 
-                // ─── 5. Eksekusi ───────────────────────────
+                // ─── 6. Eksekusi: kurangi stok, buat peminjaman ─────
                 $book->decrement('stock');
 
                 Borrowing::create([
